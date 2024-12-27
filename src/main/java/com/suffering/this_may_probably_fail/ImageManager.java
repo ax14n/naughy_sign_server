@@ -7,9 +7,15 @@ package com.suffering.this_may_probably_fail;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Clase encargada de ejecutar un hilo que maneja el almacenamiento de imagenes.
+ *
+ * @author me
+ */
 public class ImageManager implements Runnable {
 
     /**
@@ -46,6 +52,7 @@ public class ImageManager implements Runnable {
      * @param threadName Nombre del hilo.
      */
     public ImageManager(String threadName) {
+        Objects.requireNonNull(threadName, "El nombre del hilo no puede ser nulo.");
         this.threadName = threadName;
     }
 
@@ -54,7 +61,7 @@ public class ImageManager implements Runnable {
      */
     @Override
     public void run() {
-        System.out.println("Esperando conexión por parte del");
+        System.out.println("Esperando conexión por parte del cliente");
         // -------- { Espera la conexión del usuario } -------- //
         try (Socket socket = serverSocket.accept()) {
             System.out.println("Conexión aceptada. Procesando...");
