@@ -54,21 +54,13 @@ import java.util.concurrent.ExecutionException;
  */
 public class ThreadStarter {
 
-//    public static void main(String[] args) {
-//
-//        Thread[] threads = {
-//            new Thread(new ImageManager("ImageManager 1")) // Hilo encargado de gestor de imagenes.
-//        };
-//
-//        threads[0].start();
-//    }
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
-        
-        try {
-            FirestoreUtils firestoreHelper = new FirestoreUtils();
-            firestoreHelper.getDocument("Usuarios", "mHz3KV6zROPy1askqNnWkSr43vj2");
-        } catch (IOException e) {
-            
-        }
+    public static void main(String[] args) {
+
+        Thread[] threads = {
+            new Thread(new ImageManager("ImageManager 1")) // Hilo encargado de gestor de imagenes.
+        };
+
+        threads[0].start();
     }
+
 }

@@ -1,1 +1,2 @@
 /target/
+src/main/resources/google-services.json # Clave de uso para Firebase.

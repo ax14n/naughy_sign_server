@@ -16,10 +16,12 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**
+ * Clase de utilidades de Firebase para nuestra aplicación de Naughty Sign.
  *
  * @author me
  */
@@ -45,7 +47,7 @@ public class FirestoreUtils {
         }
 
         // ------- { Formación de la conexión con la BBDD. } ------- // 
-        FirebaseOptions builder = new FirebaseOptions.Builder()
+        FirebaseOptions builder = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                 .build();
         FirebaseApp.initializeApp(builder);
@@ -131,6 +133,46 @@ public class FirestoreUtils {
         DocumentReference docRef = db.collection(collectionName).document(documentId);
         docRef.delete().get();  // Bloquea hasta que se elimine el documento
         System.out.println("Documento eliminado con éxito");
+    }
+
+    /**
+     * Extrae la lista de Likes de un usuario especificado por parámetro.
+     *
+     * @param documentId Identificador del documento.
+     * @throws ExecutionException Debido a fallo al ejecutar.
+     * @throws InterruptedException En caso de interrupción durante el proceso.
+     */
+    public void getLikes(String documentId) throws InterruptedException, ExecutionException {
+        DocumentReference docRef = db.collection("Usuarios").document(documentId).collection("Likes").document("UUID");
+        DocumentSnapshot document = docRef.get().get(); // Bloquea hasta obtener el documento
+        if (document.exists()) {
+            ArrayList arrayList = (ArrayList) document.get("UUID");
+            for (int i = 0; i < arrayList.size(); i++) {
+                System.out.println(arrayList.get(i));
+            }
+        } else {
+            System.out.println("El documento no existe");
+        }
+    }
+
+    /**
+     * Extrae la lista de Matches de un usuario especificado por parámetro.
+     *
+     * @param documentId Identificador del documento.
+     * @throws ExecutionException Debido a fallo al ejecutar.
+     * @throws InterruptedException En caso de interrupción durante el proceso.
+     */
+    public void getMatches(String documentId) throws InterruptedException, ExecutionException {
+        DocumentReference docRef = db.collection("Usuarios").document(documentId).collection("Matches").document("UUID");
+        DocumentSnapshot document = docRef.get().get(); // Bloquea hasta obtener el documento
+        if (document.exists()) {
+            ArrayList arrayList = (ArrayList) document.get("UUID");
+            for (int i = 0; i < arrayList.size(); i++) {
+                System.out.println(arrayList.get(i));
+            }
+        } else {
+            System.out.println("El documento no existe");
+        }
     }
 
 }

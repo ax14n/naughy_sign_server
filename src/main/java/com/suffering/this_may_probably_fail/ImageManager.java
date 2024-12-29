@@ -62,7 +62,6 @@ public class ImageManager implements Runnable {
     @Override
     public void run() {
         System.out.println("Esperando conexión por parte del cliente");
-        // -------- { Espera la conexión del usuario } -------- //
         try (Socket socket = serverSocket.accept()) {
             System.out.println("Conexión aceptada. Procesando...");
 
@@ -70,6 +69,33 @@ public class ImageManager implements Runnable {
             // así traducir los datos envíados por parte del cliente.
             DataInputStream inputStream = new DataInputStream(socket.getInputStream());
 
+            switch (inputStream.readUTF()) {
+                case "write":
+                    storagePhoto(inputStream, socket);
+                    System.out.println("write");
+                    break;
+                case "read":
+                    chargePhotos(inputStream, socket);
+                    System.out.println("read");
+                    break;
+                default:
+                    throw new AssertionError();
+            }
+        } catch (Exception e) {
+            System.out.println(e.getStackTrace());
+        }
+    }
+
+    /**
+     * Almacena las fotos enviadas por el cliente en su respectiva carpeta de
+     * usuario de forma local. Las imagenes son enviadas en forma bytes y
+     * formadas en la parte del servidor.
+     *
+     * @param inputStream InputStream extraido del puerto con el que se ha hecho
+     * conexión.
+     */
+    private void storagePhoto(DataInputStream inputStream, Socket socket) {
+        try {
             // -------- { Identifica el usuario y prepara su entorno. } -------- //
             String userUUID = inputStream.readUTF();
             System.out.printf("Gestionando usuario: %s%n", userUUID);
@@ -111,44 +137,61 @@ public class ImageManager implements Runnable {
     }
 
     /**
-     * Crea el directorio personal del usuario si no existe.
+     * Extrae las imagenes almacenadas por parte de un usuario dentro del
+     * servidor y las vuelve a enviar al cliente en forma de flujo de bytes.
+     *
+     * @param inputStream InputStream extraido del puerto con el que se ha hecho
+     * conexión.
      */
-    private void createPersonalDirectory(String userUUID) {
-        File userDir = new File("~/Documents" + "/kotlin_data/" + userUUID);
-        if (!userDir.exists() && !userDir.mkdirs()) {
-            LOGGER.warning("No se pudo crear el directorio: " + userDir.getAbsolutePath());
+    private void chargePhotos(DataInputStream inputStream, Socket socket) {
+        try {
+
+            // Se crea un enlace con el socket para escribir datos hacia el cliente
+            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+
+            // -------- { Identifica el usuario y prepara su entorno. } -------- //
+            String userUUID = inputStream.readUTF();
+            System.out.printf("Gestionando usuario: %s%n", userUUID);
+
+            File directory = new File(String.format("%s/kotlin_data/%s/", System.getProperty("user.home"), userUUID));
+            String[] images = directory.list();
+
+            for (int image = 0; image < images.length; image++) {
+
+                // -------- { Recepción del nombre del fichero solicitado. } -------- //
+                String fileName = images[image];
+
+                // Crear referencia al archivo solicitado
+                File imageFile = new File(String.format("%s/kotlin_data/%s/%s", System.getProperty("user.home"), userUUID, fileName));
+
+                // -------- { Enviar el archivo } -------- //
+                try (FileInputStream fis = new FileInputStream(imageFile)) {
+                    dataOutputStream.writeUTF(fileName); // Nombre del archivo
+                    dataOutputStream.writeLong(imageFile.length()); // Tamaño del archivo
+
+                    byte[] buffer = new byte[8192];
+                    int bytesRead;
+
+                    // -------- { Mientras haya contenido, envíalo. } -------- //
+                    while ((bytesRead = fis.read(buffer)) != -1) {
+                        dataOutputStream.write(buffer, 0, bytesRead);
+                    }
+                    System.out.printf("Archivo enviado: %s%n", imageFile.getAbsolutePath());
+                }
+            }
+            dataOutputStream.writeUTF("EOF"); // Notifica al cliente que ha terminado.
+        } catch (IOException ex) {
+            Logger.getLogger(ImageManager.class.getName()).log(Level.SEVERE, "Error durante la transferencia", ex);
         }
     }
 
     /**
-     * Guarda la foto en el directorio del usuario.
-     *
-     * @param userUUID UUID del usuario.
-     * @param fileName Nombre del archivo.
-     * @param fileSize Tamaño del archivo en bytes.
-     * @param dataInputStream Flujo de entrada con los datos del archivo.
-     * @throws IOException En caso de error.
+     * Crea el directorio personal del usuario si no existe.
      */
-    private void storePhoto(String userUUID, String fileName, long fileSize, DataInputStream dataInputStream) throws IOException {
-        File outputFile = new File(System.getProperty("user.home") + "/kotlin_data/" + userUUID + "/" + fileName);
-        try (FileOutputStream fileOutputStream = new FileOutputStream(outputFile)) {
-            byte[] buffer = new byte[4096];
-            long bytesReceived = 0;
-
-            while (bytesReceived < fileSize) {
-                int bytesToRead = (int) Math.min(buffer.length, fileSize - bytesReceived);
-                int bytesRead = dataInputStream.read(buffer, 0, bytesToRead);
-
-                if (bytesRead == -1) {
-                    throw new IOException("Conexión interrumpida antes de completar la transferencia.");
-                }
-
-                fileOutputStream.write(buffer, 0, bytesRead);
-                bytesReceived += bytesRead;
-            }
-
-            System.out.printf("Archivo guardado en: %s%n", outputFile.getAbsolutePath());
+    private void createPersonalDirectory(String userUUID) {
+        File userDir = new File("%s/kotlin_data/%s".formatted(System.getProperty("user.home"), userUUID));
+        if (!userDir.exists() && !userDir.mkdirs()) {
+            LOGGER.warning("No se pudo crear el directorio: " + userDir.getAbsolutePath());
         }
     }
-
 }

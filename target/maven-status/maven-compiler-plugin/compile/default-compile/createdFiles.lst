@@ -1,4 +1,4 @@
-com/suffering/this_may_probably_fail/database/FirestoreHelper.class
 com/suffering/this_may_probably_fail/ImageManager.class
+com/suffering/this_may_probably_fail/database/FirestoreUtils.class
 com/suffering/this_may_probably_fail/MatchesManager.class
 com/suffering/this_may_probably_fail/ThreadStarter.class
